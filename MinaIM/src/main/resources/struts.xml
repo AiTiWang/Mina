@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE struts PUBLIC
+    "-//Apache Software Foundation//DTD Struts Configuration 2.1//EN"
+    "http://struts.apache.org/dtds/struts-2.1.dtd">
+<struts>
+	<!-- <constant name="struts.i18n.encoding" value="UTF-8"></constant> -->
+	<constant name="struts.configuration.xml.reload" value="true"></constant>
+	<!-- 设置文件上传的最大值 为 52428800单位是B，就是50M -->
+	<!-- <constant name="struts.multipart.maxSize" value="524288000" /> -->
+
+	<constant name="struts.devMode" value="false"></constant>
+	<package name="Wechat" namespace="/msg" extends="struts-default">
+		<!-- 通配符 -->
+		<action name="sendMsg" class="com.i4evercai.test.MessageAction.MessageAction"
+			method="sendMsg">
+		</action>
+	</package>
+</struts>

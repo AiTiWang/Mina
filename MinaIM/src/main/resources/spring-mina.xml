@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+http://www.springframework.org/schema/tx
+http://www.springframework.org/schema/tx/spring-tx-2.5.xsd
+http://www.springframework.org/schema/aop
+http://www.springframework.org/schema/aop/spring-aop-2.5.xsd">
+	<bean class="org.springframework.beans.factory.config.CustomEditorConfigurer">
+		<property name="customEditors">
+			<map>
+				<entry key="java.net.SocketAddress"
+					value="org.apache.mina.integration.beans.InetSocketAddressEditor">
+				</entry>
+			</map>
+		</property>
+	</bean>
+
+	<!-- The IoHandler implementation -->
+	<bean id="serverHandler" class="com.i4evercai.mina.handler.MinaIoHandler" />
+
+	<!-- The SSL configuration -->
+	<bean id="keystoreFactory" class="org.apache.mina.filter.ssl.KeyStoreFactory">
+		<property name="password" value="123456" />
+		<property name="dataUrl"
+			value="classpath:serverKeys.jks" />
+	</bean>
+	<bean id="keyStore" factory-bean="keystoreFactory" factory-method="newInstance" />
+
+	<bean id="bogusTrustManagerFactory"
+		class="com.i4evercai.mina.filter.ssl.BogusTrustManagerFactory" />
+
+	<!-- SSLContext to be used -->
+	<bean id="sslContextFactory" class="org.apache.mina.filter.ssl.SslContextFactory">
+		<property name="protocol" value="TLS" />
+		<property name="keyManagerFactoryAlgorithm" value="SunX509" />
+		<property name="keyManagerFactoryKeyStore">
+			<ref local="keyStore" />
+		</property>
+		<property name="keyManagerFactoryKeyStorePassword" value="123456" />
+		<property name="trustManagerFactory">
+			<ref local="bogusTrustManagerFactory" />
+		</property>
+
+	</bean>
+	<bean id="sslContext" factory-bean="sslContextFactory"
+		factory-method="newInstance" />
+	<bean id="sslFilter" class="org.apache.mina.filter.ssl.SslFilter">
+		<constructor-arg ref="sslContext" />
+		<property name="needClientAuth" value="true" />
+	</bean>
+	
+	
+	<bean id="serverAcceptor" class="org.apache.mina.transport.socket.nio.NioSocketAcceptor"
+		init-method="bind" destroy-method="unbind">
+		<property name="defaultLocalAddress" value=":28888" />
+		<property name="handler" ref="serverHandler" />
+		<property name="reuseAddress" value="true" />
+		<property name="filterChainBuilder" ref="filterChainBuilder" />
+	</bean>
+	<bean id="sessionConfig" factory-bean="serverAcceptor"
+		factory-method="getSessionConfig">
+		<property name="bothIdleTime" value="180" />
+		<property name="keepAlive" value="true" />
+		<property name="tcpNoDelay" value="true" />
+	</bean>
+	<bean id="keepAliveFilter" class="com.i4evercai.mina.filter.KeepAliveFilter">
+		<property name="forwardEvent" value="false" />
+		<property name="requestInterval" value="30" />
+		<property name="requestTimeout" value="10" />
+	</bean>
+	<bean id="filterChainBuilder"
+		class="org.apache.mina.core.filterchain.DefaultIoFilterChainBuilder">
+		<property name="filters">
+			<map>
+				<entry key="executor">
+					<bean class="org.apache.mina.filter.executor.ExecutorFilter">
+						<!-- <constructor-arg index="0" value="5" /> <constructor-arg index="1" 
+							value="10" /> -->
+					</bean>
+				</entry>
+				<entry key="logging">
+					<bean class="org.apache.mina.filter.logging.LoggingFilter" />
+				</entry>
+				<!-- <entry key="sslFilter" value-ref="sslFilter" /> -->
+				<entry key="codec">
+					<bean class="org.apache.mina.filter.codec.ProtocolCodecFilter">
+						<constructor-arg>
+							<bean class="com.i4evercai.mina.filter.MessageCodecFactory1" />
+						</constructor-arg>
+					</bean>
+				</entry>
+				<entry key="heartbeat" value-ref="keepAliveFilter"></entry>
+			</map>
+		</property>
+	</bean>
+</beans>
